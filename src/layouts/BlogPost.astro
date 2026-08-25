@@ -7,14 +7,14 @@ import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 
-type Props = CollectionEntry<'blog'>['data'] & { headings?: MarkdownHeading[] };
+type Props = CollectionEntry<'blog'>['data'] & { headings?: MarkdownHeading[]; ogImage?: string };
 
-const { title, description, pubDate, updatedDate, headings = [] } = Astro.props;
+const { title, description, pubDate, updatedDate, headings = [], ogImage } = Astro.props;
 ---
 
 <html lang="ko">
 	<head>
-		<BaseHead title={title} description={description} />
+		<BaseHead title={title} description={description} ogImage={ogImage} />
 		<style>
 			main {
 				width: calc(100% - 2em);
