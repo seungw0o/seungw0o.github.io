@@ -1,0 +1,179 @@
+/*
+  엔지니어링 노트 컨셉.
+  흰 모눈종이 + 정돈된 본문(IBM Plex Sans KR) + 손글씨 포인트(Nanum Pen Script).
+  손글씨는 제목/날짜/주석 같은 "메모" 요소에만 쓴다.
+  Based off of Bear Blog's default CSS (MIT).
+ */
+
+:root {
+	--paper: #ffffff;
+	--grid-line: rgba(0, 0, 0, 0.06); /* 모눈 */
+	--ink: 26, 26, 28;
+	--ink-soft: 90, 90, 96;
+	--accent: #c94b3c; /* 빨간펜 */
+	--accent-dark: #9c3328;
+	--highlight: rgba(255, 228, 100, 0.45); /* 형광펜(저채도) */
+	--black: var(--ink);
+	--gray: 130, 130, 138;
+	--gray-light: 236, 236, 238;
+	--gray-dark: var(--ink);
+	--gray-gradient: rgba(0, 0, 0, 0), var(--paper);
+	--box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.12);
+	--font-hand-title: 'Nanum Pen Script', cursive;
+	--font-body: 'IBM Plex Sans KR', sans-serif;
+	--font-hand: var(--font-body); /* 구 토큰 호환 */
+	--font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+	--grid: 28px;
+}
+html {
+	scroll-behavior: smooth;
+}
+body {
+	font-family: var(--font-body);
+	margin: 0;
+	padding: 0;
+	text-align: left;
+	/* 모눈종이 */
+	background-color: var(--paper);
+	background-image:
+		linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+		linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+	background-size: var(--grid) var(--grid);
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	color: rgb(var(--ink));
+	font-size: 18px;
+	line-height: 1.75;
+}
+main {
+	width: 720px;
+	max-width: calc(100% - 2em);
+	margin: auto;
+	padding: 3em 1em;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--font-hand-title);
+	font-weight: 400;
+	margin: 0 0 0.5rem 0;
+	color: rgb(var(--ink));
+	line-height: 1.2;
+}
+h1 {
+	font-size: 3em;
+}
+h2 {
+	font-size: 2.2em;
+	/* 형광펜 밑줄 강조 */
+	display: inline-block;
+	background: linear-gradient(transparent 62%, var(--highlight) 62%, var(--highlight) 94%, transparent 94%);
+	padding: 0 0.15em;
+}
+h3 {
+	font-size: 1.8em;
+}
+h4 {
+	font-size: 1.5em;
+}
+h5 {
+	font-size: 1.25em;
+}
+strong,
+b {
+	font-weight: 700;
+}
+a {
+	color: var(--accent);
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 4px;
+}
+a:hover {
+	color: var(--accent-dark);
+	text-decoration-thickness: 2px;
+}
+p {
+	margin-bottom: 1em;
+}
+.prose p {
+	margin-bottom: 1.4em;
+}
+textarea {
+	width: 100%;
+	font-size: 16px;
+}
+input {
+	font-size: 16px;
+}
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+th,
+td {
+	border: 1px solid rgba(var(--ink-soft), 0.35);
+	padding: 0.3em 0.6em;
+}
+img {
+	max-width: 100%;
+	height: auto;
+	border: 1px solid rgba(var(--ink-soft), 0.3);
+	border-radius: 3px;
+	box-shadow: var(--box-shadow);
+}
+code {
+	font-family: var(--font-mono);
+	font-size: 0.85em;
+	padding: 2px 6px;
+	background-color: #f4f4f5;
+	border: 1px solid rgba(var(--ink-soft), 0.25);
+	border-radius: 4px;
+}
+pre {
+	padding: 1.2em 1.5em;
+	border-radius: 4px;
+	font-size: 0.85em;
+	line-height: 1.6;
+	overflow-x: auto;
+}
+pre > code {
+	all: unset;
+	font-family: var(--font-mono);
+}
+blockquote {
+	border-left: 3px solid var(--accent);
+	padding: 0 0 0 20px;
+	margin: 0 0 1em 0;
+	color: rgb(var(--ink-soft));
+}
+hr {
+	border: none;
+	border-top: 1px solid rgba(var(--ink-soft), 0.35);
+	margin: 2em 0;
+}
+@media (max-width: 720px) {
+	body {
+		font-size: 17px;
+	}
+	main {
+		padding: 1em;
+	}
+}
+
+.sr-only {
+	border: 0;
+	padding: 0;
+	margin: 0;
+	position: absolute !important;
+	height: 1px;
+	width: 1px;
+	overflow: hidden;
+	clip: rect(1px 1px 1px 1px);
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	white-space: nowrap;
+}

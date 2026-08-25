@@ -1,0 +1,122 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+	headings: MarkdownHeading[];
+}
+
+const { headings } = Astro.props;
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+{
+	toc.length > 0 && (
+		<nav class="toc" aria-label="목차">
+			<ul>
+				{toc.map((h) => (
+					<li class={`depth-${h.depth}`}>
+						<a href={`#${h.slug}`}>{h.text}</a>
+					</li>
+				))}
+			</ul>
+		</nav>
+	)
+}
+
+<style>
+	/* 인프랩 tech 블로그 목차 방식:
+	   래퍼는 문서 기준 absolute라 글 제목 높이에서 시작하고,
+	   안쪽 ul은 fixed라 그 화면 위치에 그대로 머문다. */
+	.toc {
+		position: absolute;
+		top: 230px;
+		left: calc(50% + 380px);
+		font-weight: 500;
+		line-height: 1.7;
+	}
+	@media (max-width: 1240px) {
+		.toc {
+			display: none;
+		}
+	}
+	ul {
+		position: fixed;
+		list-style: none;
+		margin: 0;
+		padding: 10px;
+		max-width: min(340px, calc(50vw - 390px));
+		max-height: 55vh;
+		overflow-y: auto;
+	}
+	li + li {
+		margin-top: 0.25em;
+	}
+	li.depth-3 {
+		padding-left: 32px;
+	}
+	li a {
+		display: block;
+		font-size: 14px;
+		padding: 2px;
+		color: rgb(var(--ink-soft));
+		text-decoration: none;
+		transition: all 0.15s cubic-bezier(0.39, 0.575, 0.565, 1);
+	}
+	li a:hover {
+		color: rgb(var(--ink));
+	}
+	li a.active {
+		color: var(--accent);
+		font-weight: 700;
+	}
+</style>
+
+<script>
+	// 스크롤 위치에 따라 현재 섹션을 목차에서 강조
+	const links = document.querySelectorAll<HTMLAnchorElement>('.toc a');
+	if (links.length > 0) {
+		const byId = new Map<string, HTMLAnchorElement>();
+		links.forEach((a) => byId.set(decodeURIComponent(a.hash.slice(1)), a));
+
+		const setActive = (id: string) => {
+			links.forEach((a) => a.classList.remove('active'));
+			byId.get(id)?.classList.add('active');
+		};
+
+		const headings = [...byId.keys()]
+			.map((id) => document.getElementById(id))
+			.filter((el): el is HTMLElement => el !== null);
+
+		// 클릭한 항목은 즉시 활성화하고, 부드러운 스크롤이 끝날 때까지
+		// 스크롤 추적이 덮어쓰지 않게 잠시 멈춘다.
+		// (바닥 근처 섹션은 제목이 상단에 닿기 전에 스크롤이 끝나서
+		//  추적만으로는 클릭한 항목과 다른 항목이 활성화될 수 있다)
+		let suppressUntil = 0;
+		links.forEach((a) =>
+			a.addEventListener('click', () => {
+				setActive(decodeURIComponent(a.hash.slice(1)));
+				suppressUntil = Date.now() + 1000;
+			}),
+		);
+
+		const onScroll = () => {
+			if (Date.now() < suppressUntil) return;
+			// 페이지 바닥에 닿으면 마지막 섹션 (짧은 마지막 섹션은 기준선에 못 올라온다)
+			if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 2) {
+				setActive(headings[headings.length - 1].id);
+				return;
+			}
+			// 화면 상단 기준선을 지난 마지막 제목이 현재 섹션.
+			// 클릭 시 제목이 상단 0px에 착지하므로, 기준선이 넓으면
+			// 바로 아래 제목까지 함께 넘어가 엉뚱한 항목이 활성화된다.
+			let current = headings[0];
+			for (const h of headings) {
+				if (h.getBoundingClientRect().top <= 32) current = h;
+				else break;
+			}
+			if (current) setActive(current.id);
+		};
+		document.addEventListener('scroll', onScroll, { passive: true });
+		onScroll();
+	}
+</script>

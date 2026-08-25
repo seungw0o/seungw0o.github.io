@@ -1,0 +1,100 @@
+---
+import type { MarkdownHeading } from 'astro';
+import type { CollectionEntry } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import Header from '../components/Header.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+
+type Props = CollectionEntry<'blog'>['data'] & { headings?: MarkdownHeading[] };
+
+const { title, description, pubDate, updatedDate, headings = [] } = Astro.props;
+---
+
+<html lang="ko">
+	<head>
+		<BaseHead title={title} description={description} />
+		<style>
+			main {
+				width: calc(100% - 2em);
+				max-width: 100%;
+				margin: 0;
+			}
+			.prose {
+				width: 720px;
+				max-width: calc(100% - 2em);
+				margin: auto;
+				padding: 1em;
+				color: rgb(var(--gray-dark));
+			}
+			.title {
+				margin-bottom: 1em;
+				padding: 1em 0;
+				text-align: center;
+				line-height: 1;
+			}
+			.title h1 {
+				margin: 0 0 0.5em 0;
+			}
+			.date {
+				margin-bottom: 0.5em;
+				color: rgb(var(--gray));
+			}
+			.last-updated-on {
+				font-style: italic;
+			}
+			.back-link,
+			.back-to-list {
+				font-family: var(--font-hand-title);
+				font-size: 1.1em;
+				background: none;
+			}
+			.back-link a,
+			.back-to-list a {
+				text-decoration: none;
+			}
+			.back-link a:hover,
+			.back-to-list a:hover {
+				text-decoration: underline;
+				text-decoration-thickness: 2px;
+				text-underline-offset: 5px;
+			}
+			.back-link {
+				margin: 0 0 0.5em 0;
+			}
+			.back-to-list {
+				margin-top: 2em;
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+		<TableOfContents headings={headings} />
+		<main>
+			<article>
+				<div class="prose">
+					<p class="back-link"><a href="/blog">← 글 목록</a></p>
+					<div class="title">
+						<div class="date">
+							<FormattedDate date={pubDate} />
+							{
+								updatedDate && (
+									<div class="last-updated-on">
+										마지막 수정: <FormattedDate date={updatedDate} />
+									</div>
+								)
+							}
+						</div>
+						<h1>{title}</h1>
+						<hr />
+					</div>
+					<slot />
+					<p class="back-to-list"><a href="/blog">← 글 목록으로</a></p>
+				</div>
+			</article>
+		</main>
+		<Footer />
+	</body>
+</html>
