@@ -3,18 +3,33 @@ import { type CollectionEntry, getCollection, render } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
 
 export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	return posts.map((post) => ({
+	const posts = (await getCollection('blog')).sort(
+		(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+	);
+	// 목록이 최신순이므로 이전 글(더 오래된 글)은 뒤, 다음 글(더 최신 글)은 앞이다.
+	return posts.map((post, index) => ({
 		params: { slug: post.id },
-		props: post,
+		props: { post, prevPost: posts[index + 1] ?? null, nextPost: posts[index - 1] ?? null },
 	}));
 }
-type Props = CollectionEntry<'blog'>;
+type Props = {
+	post: CollectionEntry<'blog'>;
+	prevPost: CollectionEntry<'blog'> | null;
+	nextPost: CollectionEntry<'blog'> | null;
+};
 
-const post = Astro.props;
+const { post, prevPost, nextPost } = Astro.props;
 const { Content, headings } = await render(post);
+const toNavLink = (entry: CollectionEntry<'blog'> | null) =>
+	entry && { title: entry.data.title, href: `/blog/${entry.id}/` };
 ---
 
-<BlogPost {...post.data} headings={headings} ogImage={`/og/blog/${post.id}.png`}>
+<BlogPost
+	{...post.data}
+	headings={headings}
+	ogImage={`/og/blog/${post.id}.png`}
+	prevPost={toNavLink(prevPost)}
+	nextPost={toNavLink(nextPost)}
+>
 	<Content />
 </BlogPost>

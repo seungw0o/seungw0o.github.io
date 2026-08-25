@@ -7,9 +7,24 @@ import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import TableOfContents from '../components/TableOfContents.astro';
 
-type Props = CollectionEntry<'blog'>['data'] & { headings?: MarkdownHeading[]; ogImage?: string };
+type PostNavLink = { title: string; href: string } | null;
+type Props = CollectionEntry<'blog'>['data'] & {
+	headings?: MarkdownHeading[];
+	ogImage?: string;
+	prevPost?: PostNavLink;
+	nextPost?: PostNavLink;
+};
 
-const { title, description, pubDate, updatedDate, headings = [], ogImage } = Astro.props;
+const {
+	title,
+	description,
+	pubDate,
+	updatedDate,
+	headings = [],
+	ogImage,
+	prevPost,
+	nextPost,
+} = Astro.props;
 ---
 
 <html lang="ko">
@@ -66,6 +81,49 @@ const { title, description, pubDate, updatedDate, headings = [], ogImage } = Ast
 			.back-to-list {
 				margin-top: 2em;
 			}
+			.post-nav {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+				margin-top: 3em;
+			}
+			.post-nav-card {
+				display: flex;
+				flex-direction: column;
+				gap: 0.4rem;
+				padding: 1.1rem 1.3rem;
+				border: 1px solid rgba(var(--ink-soft), 0.3);
+				border-radius: 10px;
+				text-decoration: none;
+				background: none;
+			}
+			.post-nav-card.prev {
+				grid-column: 1;
+			}
+			.post-nav-card.next {
+				grid-column: 2;
+			}
+			.post-nav-card:hover {
+				border-color: var(--accent);
+			}
+			.post-nav-label {
+				font-size: 0.85rem;
+				color: rgb(var(--ink-soft));
+			}
+			.post-nav-title {
+				font-weight: 700;
+				color: rgb(var(--ink));
+				line-height: 1.4;
+			}
+			@media (max-width: 720px) {
+				.post-nav {
+					grid-template-columns: 1fr;
+				}
+				.post-nav-card.prev,
+				.post-nav-card.next {
+					grid-column: auto;
+				}
+			}
 		</style>
 	</head>
 
@@ -91,6 +149,24 @@ const { title, description, pubDate, updatedDate, headings = [], ogImage } = Ast
 						<hr />
 					</div>
 					<slot />
+					{
+						(prevPost || nextPost) && (
+							<nav class="post-nav" aria-label="이전 글과 다음 글">
+								{prevPost && (
+									<a class="post-nav-card prev" href={prevPost.href}>
+										<span class="post-nav-label">이전 글</span>
+										<span class="post-nav-title">{prevPost.title}</span>
+									</a>
+								)}
+								{nextPost && (
+									<a class="post-nav-card next" href={nextPost.href}>
+										<span class="post-nav-label">다음 글</span>
+										<span class="post-nav-title">{nextPost.title}</span>
+									</a>
+								)}
+							</nav>
+						)
+					}
 					<p class="back-to-list"><a href="/blog">← 글 목록으로</a></p>
 				</div>
 			</article>
