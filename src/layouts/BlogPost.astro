@@ -68,6 +68,10 @@ const {
 			.back-link a,
 			.back-to-list a {
 				text-decoration: none;
+				/* 클릭 영역 확보. 음수 마진으로 시각적 위치는 그대로 둔다 */
+				display: inline-block;
+				padding: 0.7em 0.4em;
+				margin: -0.7em -0.4em;
 			}
 			.back-link a:hover,
 			.back-to-list a:hover {

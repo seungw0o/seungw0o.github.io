@@ -67,15 +67,6 @@ const posts = (await getCollection('blog')).sort(
 				text-decoration-color: var(--accent);
 				text-decoration-thickness: 2px;
 			}
-			@media (max-width: 720px) {
-				ul li a {
-					flex-direction: column;
-					gap: 0.75rem;
-				}
-				.thumb {
-					width: 100%;
-				}
-			}
 		</style>
 	</head>
 	<body>

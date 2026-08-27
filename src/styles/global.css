@@ -62,16 +62,23 @@ h6 {
 	margin: 0 0 0.5rem 0;
 	color: rgb(var(--ink));
 	line-height: 1.2;
+	/* 한글 제목은 어절 중간에서 끊지 않는다 */
+	word-break: keep-all;
 }
 h1 {
 	font-size: 3em;
+	line-height: 1.05;
 }
 h2 {
 	font-size: 2.2em;
-	/* 형광펜 밑줄 강조 */
-	display: inline-block;
+}
+/* 형광펜 밑줄 강조. rehypeProseFixes가 넣어주는 인라인 span에 건다.
+   box-decoration-break: clone 이라야 두 줄로 넘어가도 줄마다 따로 칠해진다. */
+h2 .hl {
 	background: linear-gradient(transparent 62%, var(--highlight) 62%, var(--highlight) 94%, transparent 94%);
 	padding: 0 0.15em;
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
 }
 h3 {
 	font-size: 1.8em;
@@ -109,14 +116,26 @@ textarea {
 input {
 	font-size: 16px;
 }
+.table-scroll {
+	overflow-x: auto;
+	margin-bottom: 1em;
+}
 table {
-	width: 100%;
+	/* 스크롤 래퍼 안에서 내용 폭을 유지하고, 남으면 컨테이너를 채운다 */
+	width: max-content;
+	min-width: 100%;
 	border-collapse: collapse;
 }
 th,
 td {
 	border: 1px solid rgba(var(--ink-soft), 0.35);
 	padding: 0.3em 0.6em;
+}
+/* 원본 크기로 열어보는 이미지 링크 */
+.zoom {
+	display: block;
+	text-decoration: none;
+	cursor: zoom-in;
 }
 img {
 	max-width: 100%;
