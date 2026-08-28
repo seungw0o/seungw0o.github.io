@@ -67,12 +67,59 @@ const posts = (await getCollection('blog')).sort(
 				text-decoration-color: var(--accent);
 				text-decoration-thickness: 2px;
 			}
+			.intro {
+				margin-bottom: 3.5rem;
+				padding-bottom: 2.5rem;
+				border-bottom: 1px solid rgba(var(--ink-soft), 0.3);
+			}
+			.intro h1 {
+				font-size: 2.4em;
+				margin-bottom: 0.4rem;
+			}
+			.intro p {
+				margin: 0 0 0.4em 0;
+				color: rgb(var(--ink-soft));
+				line-height: 1.7;
+			}
+			.intro-links {
+				margin-top: 0.8em;
+				font-family: var(--font-hand-title);
+				font-size: 1.15em;
+			}
+			.intro-links a {
+				text-decoration: none;
+			}
+			.intro-links a:hover {
+				text-decoration: underline;
+				text-decoration-thickness: 2px;
+				text-underline-offset: 5px;
+			}
+			.intro-links span {
+				color: rgb(var(--ink-soft));
+				margin: 0 0.5em;
+			}
+			.recent-label {
+				font-family: var(--font-hand-title);
+				font-size: 1.6em;
+				margin-bottom: 1.5rem;
+			}
 		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
+			<section class="intro">
+				<h1>{'Frontend Engineer 정승우입니다.'}</h1>
+				<p>{'개발을 하며 경험한 내용과 알게 된 사실을 블로그로 정리하고 있습니다.'}</p>
+				<p class="intro-links">
+					<a href="mailto:jung.sw.dev@gmail.com">Email</a><span>·</span><a
+						href="https://www.linkedin.com/in/seungw0o/"
+						target="_blank">LinkedIn</a
+					><span>·</span><a href="https://github.com/seungw0o" target="_blank">GitHub</a>
+				</p>
+			</section>
 			<section>
+				<p class="recent-label">최근 글</p>
 				<ul>
 					{
 						posts.map((post) => (
