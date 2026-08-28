@@ -119,6 +119,21 @@ input {
 .table-scroll {
 	overflow-x: auto;
 	margin-bottom: 1em;
+	/* 스크롤 그림자: 흰 덮개는 내용과 함께 밀리고(local), 그림자는 고정(scroll).
+	   끝까지 스크롤하면 덮개가 그림자를 가려 사라진다. */
+	background:
+		linear-gradient(to right, var(--paper), rgba(255, 255, 255, 0)) left / 20px 100% no-repeat
+			local,
+		linear-gradient(to left, var(--paper), rgba(255, 255, 255, 0)) right / 20px 100% no-repeat
+			local,
+		radial-gradient(farthest-side at 0 50%, rgba(var(--ink-soft), 0.28), rgba(255, 255, 255, 0))
+			left / 10px 100% no-repeat scroll,
+		radial-gradient(
+				farthest-side at 100% 50%,
+				rgba(var(--ink-soft), 0.28),
+				rgba(255, 255, 255, 0)
+			)
+			right / 10px 100% no-repeat scroll;
 }
 table {
 	/* 스크롤 래퍼 안에서 내용 폭을 유지하고, 남으면 컨테이너를 채운다 */
