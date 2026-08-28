@@ -24,6 +24,10 @@ const ogImageURL = new URL(ogImage ?? image?.src ?? '/og/site.png', Astro.url);
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<!-- 흰 모눈종이가 디자인 정체성이라 다크 팔레트를 두지 않는다.
+     선언이 없으면 Chrome 자동 다크(Android 어두운 테마 등)가 페이지를 임의로
+     뒤집는데, 반투명 형광펜이 검은 배경 위에서 탁한 얼룩이 된다. -->
+<meta name="color-scheme" content="only light" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="icon" href="/favicon.ico" />
 <link rel="sitemap" href="/sitemap-index.xml" />
