@@ -1,63 +1,34 @@
-# Astro Starter Kit: Blog
+# seungw0o.dev
+
+Astro 기반 개인 기술 블로그. https://seungw0o.github.io
+
+## 스택
+
+- [Astro](https://astro.build) + MDX — 정적 사이트
+- GitHub Pages + GitHub Actions — `main`에 push하면 자동 배포
+- pnpm, Node 22 이상
+
+## 개발
 
 ```sh
-pnpm create astro@latest -- --template blog
+pnpm install
+pnpm dev        # localhost:4321
+pnpm build      # 프로덕션 빌드 (dist/)
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+새 글(`src/content/blog/*.mdx`)을 추가하면 dev 서버를 재시작해야
+콘텐츠 컬렉션과 폰트 서브셋이 갱신된다.
 
-Features:
+## 구조
 
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and Open Graph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
+- `src/content/blog/` — 글(MDX). 파일명이 곧 URL (`font.mdx` → `/blog/font/`)
+- `src/assets/blog/<글이름>/` — 글에 쓰는 이미지
+- `scripts/build-fonts.mjs` — 빌드 타임 폰트 서브셋. 소스에서 실제 쓰는
+  글자만 모아 woff2를 생성한다 (IBM Plex Sans KR, Nanum Pen Script)
+- `src/pages/og/[...route].ts` — 글마다 OG 카드 PNG를 빌드 시 생성
+  (satori + resvg)
 
-## 🚀 Project Structure
+## 라이선스
 
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-├── public/
-├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
-├── astro.config.mjs
-├── README.md
-├── package.json
-└── tsconfig.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
-
-## Credit
-
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+글과 이미지의 저작권은 작성자에게 있습니다. 코드는 자유롭게 참고하셔도 됩니다.
+폰트는 모두 [SIL OFL](https://openfontlicense.org) 라이선스입니다.
