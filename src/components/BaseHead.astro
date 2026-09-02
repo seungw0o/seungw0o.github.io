@@ -51,8 +51,22 @@ const ogImageURL = new URL(ogImage ?? image?.src ?? '/og/site.png', Astro.url);
 <title>{title}</title>
 <meta name="description" content={description} />
 
+<!-- 검색결과 사이트명. github.io 서브도메인이라 선언이 없으면 구글이
+     모체 도메인의 이름("GitHub")을 가져다 쓴다. -->
+<script
+	type="application/ld+json"
+	is:inline
+	set:html={JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'WebSite',
+		name: SITE_TITLE,
+		url: Astro.site,
+	})}
+/>
+
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content={SITE_TITLE} />
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
