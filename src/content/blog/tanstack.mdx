@@ -1,0 +1,267 @@
+---
+title: 'TanStack Query 딥다이브 여정기'
+description: '부족한 기본기 강화를 위해 TanStack Query 내부 코드를 보며 학습하고 직접 구현까지 한 여정입니다.'
+pubDate: '10 21 2026'
+---
+import { Image } from 'astro:assets';
+import useQueryUseEffect from '../../assets/blog/tanstack/usequery-useeffect.png';
+import notionNoteEx from "../../assets/blog/tanstack/notion-note-ex.png"
+import devtools from "../../assets/blog/tanstack/devtools.png"
+import invalidate from "../../assets/blog/tanstack/invalidate.png"
+import invalidatePage2A from "../../assets/blog/tanstack/invalidate-page2-a.png"
+import invalidatePage1B from "../../assets/blog/tanstack/invalidate-page1-b.png"
+
+
+AI를 활용해 개발하던 중, "내가 목표로 삼았던 개발자의 모습이 이런 모습일까?" 라는 생각이 들었습니다.
+
+저는 AI 시대의 개발자에게 가장 중요한 건 기본기라고 생각합니다. AI가 짠 코드를 확인할 때도, AI에게 원하는 방향을 설명할 때도 기본기가 필요하기 때문입니다.
+하지만 돌아보니 저는 AI가 시키는 대로 개발하고 있었고, 여러 갈림길 중 옳은 길을 스스로 고르지 못했습니다. 그래서 하나를 정해 깊게 파 보기로 했습니다.
+
+## 왜 TanStack Query인가
+TanStack Query는 프론트엔드 생태계에서 서버 상태를 관리하는 라이브러리입니다. 채용 공고 20개를 살펴보니 12개가 TanStack Query를 언급하고 있었습니다.
+그런데 저는 `useQuery`, `queryKey`, `staleTime`, `gcTime` 같은 이름만 알 뿐, 내부에서 어떻게 동작하는지는 설명하지 못했습니다.
+
+## 공부한 방법
+AI가 바로 답을 알려주면 당장은 편하지만 남는 게 없다고 생각해, AI가 코드나 이론의 정답을 먼저 말하지 않도록 제한했습니다. 답답했지만 스스로 생각하는 시간을 가질 수 있었습니다.
+
+방법은 세 단계였습니다. 먼저 "invalidate는 어떻게 동작할까?", "staleTime과 gcTime은 어떻게 동작할까?" 같은 상황의 결과를 예측해서 적었습니다.
+그다음 상황을 코드로 재현해 브라우저와 Devtools로 실제 동작을 관찰했고, 마지막으로 예측과 달랐던 부분은 TanStack Query 소스 코드를 읽으며 이유를 찾았습니다.
+처음에는 소스 코드가 복잡해 어디서부터 읽어야 할지 막막했지만, 보다 보니 눈에 익어 생각보다 수월했습니다.
+
+<a class="zoom" href={notionNoteEx.src} target="_blank" rel="noopener">
+	<Image src={notionNoteEx} width={640} densities={[1, 2]} alt="노션 실험 노트 화면" style={{ display: 'block', margin: '0 auto 1.5em' }} />
+</a>
+
+
+## 딥다이브를 통해 발견한 흥미로운 점
+
+### queryKey는 캐시 주소다
+딥다이브를 진행하며 여러 실험을 하였고 그중 같은 검색 기능을 `useQuery`와 `useEffect`로 각각 만들어 비교하는 실험을 진행했습니다.
+검색창에 입력할 때마다 요청을 보내되, 짧은 검색어일수록 응답이 늦게 오도록 일부러 지연시켰습니다.
+그래서 app을 입력하면 app의 결과가 가장 먼저, 그다음 ap, 마지막으로 a의 결과가 도착합니다.
+
+<a class="zoom" href={useQueryUseEffect.src} target="_blank" rel="noopener">
+	<Image src={useQueryUseEffect} width={360} densities={[1, 2]} alt="useQuery로 서버 상태 관리와 useEffect로 서버 상태 관리 화면" style={{ display: 'block', margin: '0 auto 1.5em' }} />
+</a>
+
+#### 예측
+`useEffect`든 `useQuery`든 짧은 검색어의 응답이 가장 나중에 도착하니, 두 화면 모두 a의 결과로 덮어써질 거라고 생각했습니다.
+
+#### 관찰
+`useEffect`는 예측대로 a의 결과가 떴지만, `useQuery`는 마지막에 입력한 app의 결과를 그대로 보여 줬습니다.
+
+<a class="zoom" href={devtools.src} target="_blank" rel="noopener">
+	<Image src={devtools} width={560} densities={[1, 2]} alt="devtools와 결과 화면" style={{ display: 'block', margin: '0 auto 1.5em' }} />
+</a>
+
+#### 실제 코드
+`useQuery`는 queryKey를 문자열(해시)로 바꾸고, 그 문자열을 주소로 삼아 `QueryCache` 안의 `Map`에 Query를 저장합니다.
+같은 주소에 Query가 이미 있으면 그걸 다시 쓰고, 없으면 새로 만듭니다.
+
+```typescript
+// @tanstack/query-core queryCache.ts build() 160~177줄 (일부 생략)
+const queryHash = options.queryHash ?? hashQueryKeyByOptions(queryKey, options)
+let query = this.get(queryHash)
+
+if (!query) {
+  query = new Query({ client, queryKey, queryHash /* ... */ })
+  this.add(query)
+}
+
+return query
+```
+
+검색어가 바뀔 때마다 queryKey(`['searchItems', 'a']`, `['searchItems', 'app']`)가 달라지니, 주소도 달라지고 Query도 따로 생깁니다.
+늦게 도착한 a의 응답은 a의 Query에 저장될 뿐이고, 화면의 `useQuery`는 지금 입력된 app의 Query를 보고 있기 때문에 화면이 바뀌지 않았습니다.
+이때 a의 Query는 지켜보는 화면(observer)이 없어 Devtools에서 inactive로 표시됩니다.
+
+#### 정리
+`useEffect` 버전은 모든 응답을 `useState` 한 곳에 저장해서, 늦게 온 응답이 최신 응답을 덮어썼습니다.
+`useQuery`는 queryKey마다 응답을 담는 Query가 따로 있고, 화면은 지금 queryKey의 Query만 보기 때문에 응답 순서가 꼬여도 화면이 틀어지지 않았습니다.
+
+### invalidate는 다시 요청을 보내는 것이 아니다
+다음 실험은 `['items']`와 `['items', { page: 1 }]`를 invalidate 했을 때 page 1과 page 2의 query에 무슨 일이 일어나는지 확인하는 것이었습니다.
+목록은 "이전 / 다음" 버튼으로 한 번에 한 페이지만 보이게 만들고, `['items']` 버튼(버튼 A)을 누르면 `['items']`를 invalidate 하도록 했고
+`['items', { page: 1 }]` 버튼(버튼 B)을 누르면 `['items', { page: 1 }]`를 invalidate 하도록 했습니다.
+그리고 page 2를 보고 있을 때와 page 1로 돌아온 뒤, 두 상황에서 버튼을 눌러 각 query의 요청이 다시 나가는지 확인했습니다.
+
+<a class="zoom" href={invalidate.src} target="_blank" rel="noopener">
+	<Image src={invalidate} width={560} densities={[1, 2]} alt="invalidate 실험 화면" style={{ display: 'block', margin: '0 auto 1.5em' }} />
+</a>
+
+#### 예측
+page 2에 있는 상황에서 invalidate 하였을 때 page 1 query와 page 2 query 모두 fetching 상태로 변할 것이라고 생각했습니다.
+page 2에 있을때 page 1 query는 inactive 상태였지만, 예측 단계에서는 inactive 상태인 query도 invalidate가 발생하면
+fetching 상태로 변할 것이라고 생각했습니다.
+
+#### 관찰
+실제 동작은 예측과 달랐습니다. 실제로 page 2에서 버튼 A를 눌렀을 때 예측과 달리 page 2 query만 fetching 상태가 되었습니다.
+
+<a class="zoom" href={invalidatePage2A.src} target="_blank" rel="noopener">
+	<Image src={invalidatePage2A} width={560} densities={[1, 2]} alt="page 2에서 버튼 A를 누른 직후 Devtools. page 2 query만 Fetching이고 page 1 query는 Inactive" style={{ display: 'block', margin: '0 auto 1.5em' }} />
+</a>
+
+page 1로 돌아와 버튼 A를 눌렀을 때도 마찬가지로, 화면에 있는 page 1 query만 다시 요청되고 inactive인 page 2 query는 요청이 나가지 않았습니다.
+page 1에서 버튼 B를 눌렀을 때는 page 1 query만 다시 요청되었고, page 2 query에는 아무 변화가 없었습니다.
+
+<a class="zoom" href={invalidatePage1B.src} target="_blank" rel="noopener">
+	<Image src={invalidatePage1B} width={560} densities={[1, 2]} alt="page 1에서 버튼 B를 누른 직후 Devtools. page 1 query만 Fetching이고 page 2 query는 Inactive" style={{ display: 'block', margin: '0 auto 1.5em' }} />
+</a>
+
+#### 실제 코드
+invalidate는 요청을 보내는 것이 아닌, 해당 query의 데이터가 오래됐으니(stale) 다시 가져와야 한다는 표시였습니다.
+```typescript
+// @tanstack/query-core queryClient.ts invalidateQueries() 469~489줄 (타입 생략)
+invalidateQueries(filters, options = {}) {
+  return notifyManager.batch(() => {
+    // 1. 조건에 맞는 query에 invalidate 표시만 붙인다
+    this.#queryCache.findAll(filters).forEach((query) => {
+      query.invalidate()
+    })
+
+    if (filters?.refetchType === 'none') {
+      return Promise.resolve()
+    }
+    // 2. 다시 요청은 refetchQueries가 한다. type을 따로 주지 않으면 'active'
+    return this.refetchQueries(
+      {
+        ...filters,
+        type: filters?.refetchType ?? filters?.type ?? 'active',
+      },
+      options,
+    )
+  })
+}
+```
+
+staleTime이 지나지 않은 query는 fresh 상태로 취급하여 invalidate로 query 값이 변했다는 표식을 남겨도
+fresh 상태여서 재요청이 안될 수 있는데, isStaleByTime() 함수를 확인하면 invalidate 표시가 있는 query는
+staleTime이 남아 있어도 stale로 취급하는 것을 확인할 수 있습니다.
+```typescript
+// @tanstack/query-core query.ts isStaleByTime() 473~488줄
+isStaleByTime(staleTime = 0) {
+  if (this.state.data === undefined) {
+    return true
+  }
+  if (staleTime === 'static') {
+    return false
+  }
+  // invalidate 표시가 있으면 staleTime이 남아 있어도 stale
+  if (this.state.isInvalidated) {
+    return true
+  }
+
+  return !timeUntilStale(this.state.dataUpdatedAt, staleTime)
+}
+```
+
+partialMatchKey() 함수는 캐시에 있는 query 키와 invalidate에 넘긴 key를 비교하여 boolean을 반환합니다.
+이 함수가 필요한 이유는 invalidate에 넘겨진 queryKey와 앞부분이 맞는 queryKey를 가진 query에 표시를 붙여야 하기 때문입니다.
+```typescript
+// @tanstack/query-core utils.ts partialMatchKey() 301~330줄 (타입 생략)
+// a: 캐시에 있는 query의 키, b: invalidate에 넘긴 키
+export function partialMatchKey(a, b) {
+  if (a === b) {
+    return true
+  }
+
+  if (typeof a !== typeof b) {
+    return false
+  }
+
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    // 배열: b의 칸 수만큼만 비교한다
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (b.length > a.length) return false
+      for (let i = 0; i < b.length; i++) {
+        if (!partialMatchKey(a[i], b[i])) {
+          return false
+        }
+      }
+      return true
+    }
+
+    // 객체: b의 키만 비교한다
+    const bKeys = Object.keys(b)
+    for (const key of bKeys) {
+      if (!partialMatchKey(a[key], b[key])) {
+        return false
+      }
+    }
+    return true
+  }
+
+  return false
+}
+```
+
+그래서 `['items']`로 invalidate 하면 page 1과 page 2의 query가 모두 골라지고, `['items', { page: 1 }]`로 invalidate 하면 page 1의 query만 골라집니다.
+
+#### 정리
+invalidate는 query를 다시 요청하는 것이 아니고 query에 표시를 남기는 것이었습니다.
+
+## 직접 구현하기
+예측하고 관찰하고 소스 코드까지 읽었지만 무언가 부족한 기분이었습니다. 이를 해결하기 위해 미니버전의 TanStack Query를 만들었습니다.
+
+hashKey, QueryCache.build(), partialMatchKey 세 함수를 만들었습니다.
+hashKey는 동일한 queryKey가 각각 다른 query에 저장되지 않게 queryKey를 정렬시키고 문자열로 변환하는 함수이고
+QueryCache.build()는 Map에 query를 저장시키는 함수, partialMatchKey는 invalidate를 처리할 때 두 queryKey를 비교하는
+함수입니다.
+
+전부를 구현하지 않고 간단하게 위 3개의 함수만 구현한 이유는, 시간적인 여유가 부족했고 중요한 로직 부분을 좀 더 중점적으로 학습하기 위함이었습니다.
+
+### 구현 중 어려웠던 부분
+hashKey 함수는 queryKey를 매개변수로 받아서 JSON.stringify를 사용해 배열 형태의 queryKey를 문자열로 바꾸는 함수였습니다.
+초반에는 이를 구현하기 위해 단순히 JSON.stringify만을 사용해 문자열로 바꾸는 함수를 작성했지만 `["items",{"page":2,"size":10}]`,
+`["items",{"size":10,"page":2}]` 이런 형태의 Key들을 다른 Key로 만드는 오류가 있었습니다. 두 키는 키의 순서만 다를 뿐
+형태는 같기 때문에 같은 키로 취급해야 했습니다.
+
+### 코드
+배열을 문자열로 바꾸기 전에 객체를 만나면 키를 정렬하고 새로운 객체로 바꾸도록 로직을 작성했습니다.
+정렬은 객체인 부분에서만 진행했는데 이유는 배열 부분도 정렬하면 `['items', 1]`과 `[1, 'items']`도 같은 Key로 처리하기 때문입니다.
+```typescript
+// 직접 구현한 hashKey
+export const hashKey = (key: KeyType): string => {
+  const sortedKeyObject = key.map((item) => {
+    if (Array.isArray(item)) {
+      return item
+    } else if (typeof item === 'object') {
+      const keyValue = Object.entries(item)
+      keyValue.sort((a, b) => a[0].localeCompare(b[0]))
+      return Object.fromEntries(keyValue)
+    }
+    return item
+  })
+  return JSON.stringify(sortedKeyObject)
+}
+```
+
+원본 hashKey의 경우 JSON.stringify의 replacer 함수로 queryKey의 안쪽 객체까지 정렬 시켰습니다.
+```typescript
+// @tanstack/query-core utils.ts hashKey() 284~295줄
+export function hashKey(queryKey: QueryKey | MutationKey): string {
+  return JSON.stringify(queryKey, (_, val) =>
+    isPlainObject(val)
+      ? Object.keys(val)
+          .sort()
+          .reduce((result, key) => {
+            result[key] = val[key]
+            return result
+          }, {} as any)
+      : val,
+  )
+}
+```
+
+직접 만든 hashKey는 바깥 객체만 정렬하기 때문에 `['items', { filter: { b: 1, a: 2 } }]`와 `['items', { filter: { a: 2, b: 1 } }]`를 다른 키로 처리합니다.
+원본은 두 키를 같은 키로 처리합니다.
+
+직접 구현한 버전은 학습용이기 때문에 읽기 쉽게 쓰려고 했습니다. 그 과정에서 객체 한 층이면 충분하다고 생각했습니다.
+
+## 마무리
+기본기를 키우기 위해 TanStack Query를 딥다이브하면서 평소에는 그냥 그러려니 하고 있던 TanStack Query의 내부 동작에 대해
+알 수 있었습니다. 그리고 TanStack Query의 일부를 직접 구현해보면서 TanStack Query의 흐름과 라이브러리를 만드는 게 얼마나 힘든 일인지 느낄 수 있었습니다.
+
+TanStack Query 딥다이브를 하며, 평소에 사용하던 라이브러리의 동작 과정과 자세히 알지 못했던 이론을 직접 확인할 수 있었던 점이 좋았습니다.
+
+긴 글 읽어주셔서 감사합니다.
